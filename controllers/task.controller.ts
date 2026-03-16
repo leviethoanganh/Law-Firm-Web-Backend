@@ -76,7 +76,11 @@ export const getMyCreatedCases = async (req: AccountRequest, res: Response) => {
     try {
         const { data: tasks, error } = await supabase
             .from("tasks")
-            .select("*")
+            .select(`
+                *,
+                assigner:account_users!assigner_id(full_name),
+                assignee:account_users!assignee_id(full_name)
+            `) // Thay đổi ở đây
             .eq("assigner_id", req.account.id)
             .neq("status", "archived")
             .order("created_at", { ascending: false });
@@ -93,7 +97,11 @@ export const getMyTasks = async (req: AccountRequest, res: Response) => {
     try {
         const { data: tasks, error } = await supabase
             .from("tasks")
-            .select("*")
+            .select(`
+                *,
+                assigner:account_users!assigner_id(full_name),
+                assignee:account_users!assignee_id(full_name)
+            `) // Thay đổi ở đây
             .eq("assignee_id", req.account.id)
             .neq("status", "archived")
             .order("created_at", { ascending: false });
