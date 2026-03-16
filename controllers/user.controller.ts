@@ -94,12 +94,13 @@ export const loginPost = async (req: Request, res: Response) => {
     );
 
     // 4. Lưu token vào Cookie
+
     res.cookie("token", token, {
       path: "/",
       maxAge: 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      httpOnly: true, // Bảo mật, chống XSS
+      secure: true,   // BẮT BUỘC: Vì Vercel và Render dùng HTTPS
+      sameSite: "none", // BẮT BUỘC: Để gửi cookie giữa 2 domain khác nhau
     });
 
     res.json({
