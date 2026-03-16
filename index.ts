@@ -20,7 +20,7 @@ const port = process.env.PORT || 5000;
 // 3. Cấu hình CORS
 // Đảm bảo origin khớp với URL của dự án React/Next.js của bạn
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: "https://law-firm-web-frontend.vercel.app",
   methods: ["GET", "POST", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   credentials: true, 
