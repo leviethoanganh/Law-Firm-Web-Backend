@@ -121,8 +121,9 @@ export const logout = async (req: Request, res: Response) => {
   res.clearCookie("token", {
     path: "/",
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    // Cấu hình này PHẢI khớp 100% với lúc loginPost tạo cookie
+    sameSite: "none", 
+    secure: true, 
   });
 
   res.json({
