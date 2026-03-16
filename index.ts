@@ -30,6 +30,12 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Thêm dòng này trước app.use("/", routes);
+app.get("/", (req, res) => {
+  res.send("Server Law Connect đang hoạt động!");
+});
+
+
 // 5. Hệ thống định tuyến (Routes)
 app.use("/", routes);
 
