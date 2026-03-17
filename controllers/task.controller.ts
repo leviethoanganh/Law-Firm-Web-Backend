@@ -1,25 +1,29 @@
 import { Request, Response } from "express";
 import { supabase } from "../configs/supabase.config";
 import { AccountRequest } from "../interfaces/request.interface";
+import { sendMail } from "../helpers/sendMail";
 
 // 1. Tạo Task mới
+// task.controller.ts
 export const createTask = async (req: AccountRequest, res: Response) => {
     try {
         const { title, description, assigneeEmail, dueDate } = req.body;
 
-        const { data: assignee, error: userError } = await supabase
+        // BƯỚC 1: Tìm ID của người nhận dựa trên Email
+        const { data: assigneeUser, error: userError } = await supabase
             .from("account_users")
             .select("id")
             .eq("email", assigneeEmail)
             .single();
 
-        if (userError || !assignee) {
+        if (userError || !assigneeUser) {
             return res.json({
                 code: "error",
                 message: "Không tìm thấy người dùng với email này!",
             });
         }
 
+        // BƯỚC 2: Tạo Task mới với ID đã tìm được
         const { data: newTask, error: taskError } = await supabase
             .from("tasks")
             .insert([
@@ -27,7 +31,7 @@ export const createTask = async (req: AccountRequest, res: Response) => {
                     title,
                     description,
                     assigner_id: req.account.id, 
-                    assignee_id: assignee.id,
+                    assignee_id: assigneeUser.id, // SỬA TẠI ĐÂY: Dùng assigneeUser.id
                     due_date: dueDate,
                     status: "assigned",
                 }
@@ -37,6 +41,9 @@ export const createTask = async (req: AccountRequest, res: Response) => {
 
         if (taskError) throw taskError;
 
+        // Logic gửi mail (giữ nguyên như mình đã hướng dẫn)...
+        // sendMail(assigneeEmail, subject, htmlContent);
+
         res.json({
             code: "success",
             message: "Tạo và giao việc thành công!",
@@ -45,7 +52,7 @@ export const createTask = async (req: AccountRequest, res: Response) => {
 
     } catch (error) {
         console.error("Lỗi Create Task:", error);
-        res.json({ code: "error", message: "Đã có lỗi xảy ra khi tạo công việc!" });
+        res.json({ code: "error", message: "Đã có lỗi xảy ra!" });
     }
 };
 
@@ -177,3 +184,4 @@ export const markTaskAsSeen = async (req: AccountRequest, res: Response) => {
         res.json({ code: "error", message: "Lỗi server" });
     }
 };
+
