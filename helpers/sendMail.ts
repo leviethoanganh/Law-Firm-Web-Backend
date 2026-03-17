@@ -1,49 +1,43 @@
 import nodemailer from "nodemailer";
 import * as dotenv from "dotenv";
+import dns from "dns";
+
 dotenv.config();
 
-/**
- * Gửi email thông báo nhiệm vụ dựa trên tài liệu Nodemailer chính thức
- * Đã tối ưu cấu hình SMTP để chạy ổn định trên Cloud (Render)
- */
-// helpers/sendMail.ts
+// 🔥 FIX LỖI IPV6 (QUAN TRỌNG)
+dns.setDefaultResultOrder("ipv4first");
 
-export const sendMail = async (email: string, subject: string, html: string) => {
+export const sendMail = async (
+    email: string,
+    subject: string,
+    html: string
+) => {
     const transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 587, // CHUYỂN TỪ 465 SANG 587
-        secure: false, // PHẢI LÀ FALSE CHO CỔNG 587
+        service: "gmail", // ✅ dùng service cho gọn
         auth: {
             user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
+            pass: process.env.EMAIL_PASS, // App password
         },
-        tls: {
-            // Cấu hình bắt buộc khi dùng cổng 587
-            ciphers: 'SSLv3',
-            rejectUnauthorized: false,
-        },
-        connectionTimeout: 20000, // Tăng thời gian chờ lên 20s
+        connectionTimeout: 20000,
         greetingTimeout: 20000,
         socketTimeout: 20000,
-        dnsV6: false // Tiếp tục chặn IPv6
-    } as any);
+    });
 
     try {
-        // Log để Anh theo dõi trên Render
-        console.log("--- Đang kiểm tra kết nối tới cổng 587 ---");
+        console.log("🔄 Đang verify SMTP...");
         await transporter.verify();
-        console.log("--- Kết nối SMTP thành công! ---");
-        
-        const mailOptions = {
+        console.log("✅ SMTP OK");
+
+        const info = await transporter.sendMail({
             from: `"Law Connect System" <${process.env.EMAIL_USER}>`,
             to: email,
-            subject: subject,
-            html: html,
-        };
+            subject,
+            html,
+        });
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log("--- GỬI MAIL THÀNH CÔNG ---", info.messageId);
+        console.log("✅ Gửi mail thành công:", info.messageId);
     } catch (error) {
-        console.error("--- LỖI KẾT NỐI/GỬI MAIL ---", error);
+        console.error("❌ Lỗi gửi mail:", error);
+        throw error; // để controller catch nếu cần
     }
 };
