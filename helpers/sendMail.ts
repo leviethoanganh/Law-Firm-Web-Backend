@@ -2,38 +2,50 @@ import nodemailer from "nodemailer";
 import * as dotenv from "dotenv";
 dotenv.config();
 
+/**
+ * Gửi email thông báo nhiệm vụ dựa trên tài liệu Nodemailer chính thức
+ * Đã tối ưu cấu hình SMTP để chạy ổn định trên Cloud (Render)
+ */
 export const sendMail = async (email: string, subject: string, html: string) => {
-    // Ép kiểu 'any' cho object cấu hình để vượt qua kiểm tra nghiêm ngặt của TS đối với dnsV6
+    
+    // 1. Khởi tạo transporter (Tham khảo từ image_11b219.png và image_11b199.png)
     const transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
         port: 465,
-        secure: true,
+        secure: true, // true cho port 465, false cho port 587
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
         },
-        tls: {
-            rejectUnauthorized: false,
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000,
-        dnsV6: false // Thuộc tính này cực kỳ quan trọng để fix lỗi trên Render
-    } as any); // Thêm 'as any' ở đây để hết báo lỗi đỏ
+        // Cấu hình socket để ép sử dụng IPv4 (Xử lý lỗi ENETUNREACH trên Render)
+        // Lưu ý: Dùng kiểu 'any' để tránh lỗi kiểm tra thuộc tính dnsV6 của TypeScript
+        dnsV6: false 
+    } as any);
 
+    // 2. Kiểm tra kết nối trước khi gửi (Tham khảo image_11b1d9.png)
+    try {
+        await transporter.verify();
+        console.log("--- Hệ thống đã sẵn sàng gửi mail ---");
+    } catch (error) {
+        console.error("--- Lỗi kết nối SMTP ---", error);
+        return; // Dừng nếu không kết nối được
+    }
+
+    // 3. Định nghĩa nội dung tin nhắn (Tham khảo image_11b1be.png)
     const mailOptions = {
-        from: `"Law Connect System" <${process.env.EMAIL_USER}>`,
-        to: email,
-        subject: subject,
-        html: html,
+        from: `"Law Connect System" <${process.env.EMAIL_USER}>`, // Địa chỉ người gửi
+        to: email, // Danh sách người nhận
+        subject: subject, // Tiêu đề
+        html: html, // Nội dung HTML
     };
 
+    // 4. Thực hiện gửi mail (Tham khảo image_11b1be.png)
     try {
         const info = await transporter.sendMail(mailOptions);
         console.log("--- GỬI MAIL THÀNH CÔNG ---");
-        console.log("Response:", info.response);
-    } catch (error) {
-        console.error("--- LỖI GỬI MAIL CHI TIẾT ---");
-        console.error(error);
+        console.log("Message sent: %s", info.messageId);
+        console.log("Response: %s", info.response);
+    } catch (err) {
+        console.error("--- Lỗi trong quá trình gửi mail ---", err);
     }
 };
