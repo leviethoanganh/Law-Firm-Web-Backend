@@ -9,7 +9,7 @@ export const createTask = async (req: AccountRequest, res: Response) => {
     try {
         const { title, description, assigneeEmail, dueDate } = req.body;
 
-        // BƯỚC 1: Tìm ID của người nhận dựa trên Email
+        // BƯỚC 1: Tìm ID người nhận (Anh đã viết đúng)
         const { data: assigneeUser, error: userError } = await supabase
             .from("account_users")
             .select("id")
@@ -17,36 +17,44 @@ export const createTask = async (req: AccountRequest, res: Response) => {
             .single();
 
         if (userError || !assigneeUser) {
-            return res.json({
-                code: "error",
-                message: "Không tìm thấy người dùng với email này!",
-            });
+            return res.json({ code: "error", message: "Không tìm thấy người dùng!" });
         }
 
-        // BƯỚC 2: Tạo Task mới với ID đã tìm được
+        // BƯỚC 2: Tạo Task (Anh đã viết đúng)
         const { data: newTask, error: taskError } = await supabase
             .from("tasks")
-            .insert([
-                {
-                    title,
-                    description,
-                    assigner_id: req.account.id, 
-                    assignee_id: assigneeUser.id, // SỬA TẠI ĐÂY: Dùng assigneeUser.id
-                    due_date: dueDate,
-                    status: "assigned",
-                }
-            ])
+            .insert([{
+                title,
+                description,
+                assigner_id: req.account.id, 
+                assignee_id: assigneeUser.id,
+                due_date: dueDate,
+                status: "assigned",
+            }])
             .select()
             .single();
 
         if (taskError) throw taskError;
 
-        // Logic gửi mail (giữ nguyên như mình đã hướng dẫn)...
-        // sendMail(assigneeEmail, subject, htmlContent);
+        // BƯỚC 3: MỞ KHÓA VÀ GỬI MAIL TẠI ĐÂY
+        const subject = `[Law Connect] Nhiệm vụ mới: ${title}`;
+        const htmlContent = `
+            <div style="font-family: sans-serif; color: #333;">
+                <h2>Xin chào,</h2>
+                <p>Bạn vừa được giao một nhiệm vụ mới trên hệ thống <b>Law Connect</b>.</p>
+                <hr/>
+                <p><b>Công việc:</b> ${title}</p>
+                <p><b>Hạn chót:</b> ${new Date(dueDate).toLocaleDateString('vi-VN')}</p>
+                <p>Vui lòng đăng nhập để xem chi tiết.</p>
+            </div>
+        `;
+
+        // Gọi hàm gửi mail (Không cần await để user không phải đợi lâu)
+        sendMail(assigneeEmail, subject, htmlContent);
 
         res.json({
             code: "success",
-            message: "Tạo và giao việc thành công!",
+            message: "Tạo việc thành công! Email thông báo đã được gửi.",
             data: newTask
         });
 
