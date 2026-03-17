@@ -48,7 +48,8 @@ export const createTask = async (req: AccountRequest, res: Response) => {
                 <p>Vui lòng đăng nhập để xem chi tiết.</p>
             </div>
         `;
-
+        console.log("Email người nhận:", assigneeEmail);
+        console.log("Cấu hình mail:", process.env.EMAIL_USER);
         // Gọi hàm gửi mail (Không cần await để user không phải đợi lâu)
         sendMail(assigneeEmail, subject, htmlContent);
 
