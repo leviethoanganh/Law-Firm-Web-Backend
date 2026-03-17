@@ -53,7 +53,8 @@ export const createTask = async (req: AccountRequest, res: Response) => {
                 <p>Vui lòng đăng nhập để xem chi tiết và thực hiện.</p>
             </div>
         `;
-
+        console.log("--- Chuẩn bị gửi mail cho:", assigneeEmail);
+        console.log("--- Nội dung mail:", htmlContent);
         // Gọi gửi mail và bắt lỗi riêng
         sendMail(assigneeEmail, subject, htmlContent).catch(err => {
             console.error("--- LỖI GỬI MAIL TRONG CONTROLLER ---", err);
