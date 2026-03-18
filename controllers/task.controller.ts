@@ -189,7 +189,7 @@ export const markAsCompleted = async (req: AccountRequest, res: Response) => {
                     <p style="font-size: 14px;">Vui lòng đăng nhập hệ thống để kiểm tra lại kết quả công việc.</p>
                     
                     <div style="text-align: center; margin-top: 24px;">
-                        <a href="https://hoanganhorg.org/created-cases" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Kiểm tra ngay</a>
+                        <a href="https://law-firm-web-frontend.vercel.app" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Kiểm tra ngay</a>
                     </div>
                     <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
                     <p style="font-size: 11px; color: #9ca3af; text-align: center;">Email gửi từ hệ thống Law Connect của hoanganhorg.org</p>
