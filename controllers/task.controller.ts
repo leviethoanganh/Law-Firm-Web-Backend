@@ -142,6 +142,7 @@ export const markAsCompleted = async (req: AccountRequest, res: Response) => {
     try {
         const { id } = req.params;
         
+        // 1. Cập nhật trạng thái và lấy thông tin người giao + người nhận
         const { data: task, error: taskError } = await supabase
             .from("tasks")
             .update({ 
@@ -150,22 +151,66 @@ export const markAsCompleted = async (req: AccountRequest, res: Response) => {
                 is_read_by_assigner: false 
             })
             .match({ id, assignee_id: req.account.id })
-            .select()
+            // Lấy thêm email người giao (Assigner) và tên người hoàn thành (Assignee)
+            .select(`
+                *,
+                assigner:account_users!assigner_id(email, full_name),
+                assignee:account_users!assignee_id(full_name)
+            `)
             .single();
 
-        if (taskError || !task) throw taskError;
+        if (taskError || !task) {
+            console.error("Lỗi cập nhật hoặc không có quyền:", taskError);
+            throw taskError;
+        }
 
+        // 2. Cộng điểm thưởng cho người hoàn thành
         await supabase.rpc('increment_points', { 
             row_id: req.account.id, 
             amount: 30 
         });
 
+        // 3. Gửi mail thông báo cho người giao (Assigner)
+        const assignerEmail = task.assigner?.email;
+        const assigneeName = task.assignee?.full_name || "Cộng sự";
+        
+        if (assignerEmail) {
+            const subject = `[Law Connect] ✅ Nhiệm vụ đã hoàn thành: ${task.title}`;
+            const htmlContent = `
+                <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px;">
+                    <h2 style="color: #10b981; margin-top: 0;">Thông báo hoàn thành!</h2>
+                    <p>Nhiệm vụ bạn giao đã được <b>${assigneeName}</b> đánh dấu hoàn thành.</p>
+                    
+                    <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 16px; margin: 20px 0;">
+                        <p style="margin: 4px 0;"><strong>📌 Tên nhiệm vụ:</strong> ${task.title}</p>
+                        <p style="margin: 4px 0;"><strong>⏰ Hoàn thành lúc:</strong> ${new Date().toLocaleString('vi-VN')}</p>
+                    </div>
+
+                    <p style="font-size: 14px;">Vui lòng đăng nhập hệ thống để kiểm tra lại kết quả công việc.</p>
+                    
+                    <div style="text-align: center; margin-top: 24px;">
+                        <a href="https://hoanganhorg.org/created-cases" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Kiểm tra ngay</a>
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+                    <p style="font-size: 11px; color: #9ca3af; text-align: center;">Email gửi từ hệ thống Law Connect của hoanganhorg.org</p>
+                </div>
+            `;
+
+            console.log("--- [Resend] Thông báo hoàn thành gửi tới:", assignerEmail);
+            
+            // Gửi mail ngầm
+            sendMail(assignerEmail, subject, htmlContent).catch(err => {
+                console.error("Lỗi gửi mail thông báo Assigner:", err);
+            });
+        }
+
         res.json({ 
             code: "success", 
             message: "Chúc mừng! Bạn đã hoàn thành nhiệm vụ và nhận được 30 điểm thưởng. 🎉" 
         });
+
     } catch (error) {
-        console.error(error);
+        console.error("Lỗi markAsCompleted:", error);
         res.json({ code: "error", message: "Lỗi cập nhật trạng thái!" });
     }
 };
