@@ -1,43 +1,31 @@
-import nodemailer from "nodemailer";
+import { Resend } from 'resend';
 import * as dotenv from "dotenv";
-import dns from "dns";
-
 dotenv.config();
 
-// 🔥 FIX LỖI IPV6 (QUAN TRỌNG)
-dns.setDefaultResultOrder("ipv4first");
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const sendMail = async (
-    email: string,
-    subject: string,
-    html: string
-) => {
-    const transporter = nodemailer.createTransport({
-        service: "gmail", // ✅ dùng service cho gọn
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS, // App password
-        },
-        connectionTimeout: 20000,
-        greetingTimeout: 20000,
-        socketTimeout: 20000,
-    });
-
+export const sendMail = async (email: string, subject: string, html: string) => {
     try {
-        console.log("🔄 Đang verify SMTP...");
-        await transporter.verify();
-        console.log("✅ SMTP OK");
+        console.log("--- [Resend] Đang gửi mail tới:", email);
 
-        const info = await transporter.sendMail({
-            from: `"Law Connect System" <${process.env.EMAIL_USER}>`,
-            to: email,
-            subject,
-            html,
+        const { data, error } = await resend.emails.send({
+            // THAY ĐỔI DÒNG NÀY: Dùng tên miền hoanganhorg.org của Anh
+            // Anh có thể đặt tên bất kỳ trước dấu @ (ví dụ: thongbao, nhiemvu, admin...)
+            from: 'Law Connect <thongbao@hoanganhorg.org>', 
+            to: email, // Bây giờ có thể gửi cho bất cứ ai, không lo lỗi 403
+            subject: subject,
+            html: html,
         });
 
-        console.log("✅ Gửi mail thành công:", info.messageId);
+        if (error) {
+            console.error("--- [Resend] Lỗi API từ hệ thống ---", error);
+            return;
+        }
+
+        console.log("--- [Resend] GỬI MAIL THÀNH CÔNG ---");
+        console.log("ID tin nhắn:", data?.id);
+
     } catch (error) {
-        console.error("❌ Lỗi gửi mail:", error);
-        throw error; // để controller catch nếu cần
+        console.error("--- [Resend] Lỗi thực thi hàm ---", error);
     }
 };
